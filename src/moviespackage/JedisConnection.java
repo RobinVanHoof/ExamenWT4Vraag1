@@ -8,6 +8,7 @@ public class JedisConnection {
 	private static final String HOST = "localhost";
 	private static JedisConnection instance;
 	private Jedis connection;
+	public int counter = 1;
 
 	public static JedisConnection getInstance() {
 		if (instance == null) {

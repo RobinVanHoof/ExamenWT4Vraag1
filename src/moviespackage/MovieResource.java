@@ -2,6 +2,8 @@ package moviespackage;
 
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -31,9 +33,9 @@ import moviespackage.JedisConnection;
 import jdk.nashorn.internal.parser.JSONParser;
 import redis.clients.jedis.Jedis;
 
+
 @Path("/movies")
 public class MovieResource {
-	private int counter = 0;
 	@GET
 	@Path("{title}")
 	@Produces({"text/html"})
@@ -41,17 +43,20 @@ public class MovieResource {
 		
 		Jedis jedis = JedisConnection.getInstance().getConnection();
 		
+		
 		String returnJSON = "";
 		
 		Boolean found = false;
 		
-
+		
 		for(String titlee : jedis.keys("Title:*")){
 			String tmpTitle = jedis.get(titlee);
 			if(tmpTitle.equalsIgnoreCase(title)){
 				found = true;
 			}
 		}
+		
+
 
 		if (!found){
 			
@@ -65,11 +70,25 @@ public class MovieResource {
 			JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
 			JsonObject object = jsonReader.readObject();
 			jsonReader.close();
-			counter = counter + 1;
-			System.out.println(counter);
-			jedis.set("Title:" + counter, "Deadpool");
-			jedis.set("Year:" + counter, object.getString("Year"));
-			jedis.set("Actors:" + counter, object.getString("Actors"));
+			
+			Set<String>keys = jedis.keys("Title:*");
+
+			int nextId = 0;
+			if (keys.iterator().hasNext()){
+				List<String> array = new ArrayList();
+				for (String key : keys){
+					array.add(key);
+				}
+				nextId = Integer.parseInt(array.get(array.size()-1).split(":")[1]) + 1;
+			}
+			else{
+				nextId = 1;
+			}
+
+			System.out.println(nextId);
+			jedis.set("Title:" + nextId, object.getString("Title"));
+			jedis.set("Year:" + nextId, object.getString("Year"));
+			jedis.set("Actors:" + nextId, object.getString("Actors"));
 			
 			JsonObjectBuilder builder = Json.createObjectBuilder();
 	        builder.add("Year", object.getString("Year"));
@@ -99,4 +118,5 @@ public class MovieResource {
 		}
 		return returnJSON;
 	}
+	
 }
